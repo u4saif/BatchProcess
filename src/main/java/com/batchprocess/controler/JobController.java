@@ -7,11 +7,11 @@ import org.springframework.batch.core.repository.JobExecutionAlreadyRunningExcep
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 
@@ -24,18 +24,24 @@ public class JobController {
     private Job job;
     @Autowired
     private CustomerRepository customerRepository;
-
+    private final String LOCAL_STORAGE = "C:/Users/TR624QQ/NewTech/batchStorage/";
     @GetMapping
     public List<Customer> getAllCustomers(){
         return customerRepository.findAll();
     }
     @PostMapping
-    public String importData(){
+    public String importData(@RequestParam("file") MultipartFile multipartFile){
+        try{
+            String OriginalFileName = multipartFile.getOriginalFilename();
+            File actualFile = new File(LOCAL_STORAGE+OriginalFileName);
+            multipartFile.transferTo(actualFile);
             JobParameters jobParameters = new JobParametersBuilder()
+                    .addString("fullPath",LOCAL_STORAGE+OriginalFileName)
                     .addLong("startAt", System.currentTimeMillis()).toJobParameters();
-            try {
+
                 jobLauncher.run(job, jobParameters);
-            } catch (JobExecutionAlreadyRunningException | JobRestartException | JobInstanceAlreadyCompleteException | JobParametersInvalidException e) {
+            } catch (JobExecutionAlreadyRunningException | JobRestartException | JobInstanceAlreadyCompleteException |
+                     JobParametersInvalidException | IOException e) {
                 e.printStackTrace();
             }
         return   "Data imported Successfully!" ;
